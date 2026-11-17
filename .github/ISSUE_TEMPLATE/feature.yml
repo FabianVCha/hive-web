@@ -1,0 +1,25 @@
+name: Feature request
+description: Define a feature and its validation scope.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the intended outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Describe included behavior and explicit exclusions.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: Describe the checks and acceptance criteria.
+    validations:
+      required: true
