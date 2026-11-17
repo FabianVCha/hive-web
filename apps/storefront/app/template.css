@@ -1,0 +1,71 @@
+/* Neutral template layer. Public palette comes from data/storefront.mjs. */
+body:has(.neutral-template) { background: #fff; }
+.ferready.campaign-theme.neutral-template {
+  --paper: var(--template-paper); --surface: var(--template-surface);
+  --ink: var(--template-ink); --navy: var(--template-ink);
+  --red: var(--template-accent); --steel: var(--template-muted); --muted: var(--template-muted);
+  color: var(--ink); background: var(--paper);
+  caret-color: var(--ink); accent-color: var(--ink); scrollbar-color: var(--muted) var(--paper);
+}
+.neutral-template .template-wordmark { font-size: clamp(22px, 2.2vw, 30px); font-weight: 750; letter-spacing: -.025em; white-space: nowrap; }
+.neutral-template .fr-header, .neutral-template .category-nav, .neutral-template .fr-footer { background: var(--paper); color: var(--ink); }
+.neutral-template .fr-header { border-bottom: 1px solid var(--template-border); }
+.neutral-template .category-nav { border-bottom: 1px solid var(--template-border); }
+.neutral-template .fr-footer { border-top: 1px solid var(--template-border); }
+.neutral-template .header-actions, .neutral-template .mobile-menu, .neutral-template .category-nav .task-nav,
+.neutral-template .footer-top p, .neutral-template .footer-top h2, .neutral-template .footer-top a,
+.neutral-template .footer-location span, .neutral-template .footer-bottom { color: var(--ink); }
+.neutral-template .header-search { background: var(--surface); }
+.neutral-template .product-hero, .neutral-template .hero-object, .neutral-template .kit-table, .neutral-template .kit-select { color: var(--ink); }
+.neutral-template .hero-intro p, .neutral-template .hero-price-note, .neutral-template .hero-disclosure,
+.neutral-template .hero-motion-toggle, .neutral-template .hero-product-link, .neutral-template .hero-catalog-link,
+.neutral-template .kit-replay, .neutral-template .journey-image-note,
+.neutral-template .drill-kit-journey:is([data-phase="2"], [data-phase="3"]) .journey-image-note { color: var(--muted); }
+.neutral-template :focus-visible, .neutral-template .product-hero :focus-visible,
+.neutral-template .fr-header :focus-visible, .neutral-template .category-nav :focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; box-shadow: none; }
+.neutral-template .hero-counter-top { background: linear-gradient(180deg, #fafafa, #e8e8e8); border-color: #ddd; }
+.neutral-template .hero-counter-edge { background: linear-gradient(180deg, #eee, #d9d9d9 30%, #eee); border-color: #ddd; box-shadow: 0 16px 22px -12px #0003; }
+.neutral-template .hero-object::before, .neutral-template .kit-select::before { background: #0003; }
+.neutral-template .objective-options > button, .neutral-template .objective-workspace,
+.neutral-template .catalog-filters, .neutral-template .product-information, .neutral-template .order-summary { background: var(--surface); }
+.neutral-template .objective-options > button[aria-pressed="true"] { background: #e5e5e5; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.neutral-template .objective-options > button[aria-pressed="true"]:active { background: #ddd; color: var(--ink); }
+.neutral-template .journey-orbit { background: var(--surface); }
+.neutral-template .drill-kit-journey:is([data-phase="2"], [data-phase="3"]) .journey-visual { background: var(--paper); }
+.neutral-template .kit-table { --hero-cloth: var(--paper); }
+.neutral-template .parcel-back { background: #d4d4d4; }
+.neutral-template .parcel-front { background: linear-gradient(110deg, #fafafa, #e2e2e2); border-color: #bbb; color: var(--ink); }
+.neutral-template .parcel-front span { color: var(--muted); }
+.neutral-template .parcel-front strong { font-size: clamp(12px, 2vw, 22px); }
+.neutral-template .parcel-side { background: #c4c4c4; }
+.neutral-template .parcel-flap { background: #eee; border-color: #bbb; }
+.neutral-template .shipping-parcel::after { background: #0002; }
+.neutral-template .stock, .neutral-template .stock span { color: var(--ink); }
+.neutral-template .stock span { background: #777; }
+.neutral-template .toast > *, .neutral-template .toast { border-color: var(--template-border); }
+.neutral-template input, .neutral-template textarea, .neutral-template select { font-size: 16px; }
+.neutral-template .hero-object span { font-size: 13px; }
+.neutral-template .hero-object:not([aria-pressed="true"]) span { font-size: 13px; }
+.neutral-template .kit-label { font-size: 12px; }
+.neutral-template .guest-checkout .checkout-steps li { color: var(--muted); }
+.neutral-template .guest-checkout .checkout-steps [aria-current],
+.neutral-template .guest-checkout .field-error, .neutral-template .guest-checkout .receipt-result > strong { color: var(--ink); }
+.neutral-template .guest-checkout .form-grid [aria-invalid="true"] { border: 2px solid var(--ink); }
+.neutral-template .guest-checkout .button:disabled, .neutral-template .demo-form-notice { background: var(--surface); color: var(--muted); }
+.neutral-template .guest-checkout .receipt-result, .neutral-template .guest-order-items > div,
+.neutral-template .form-grid input, .neutral-template .form-grid select { border-color: var(--template-border); }
+.neutral-template .journey-progress { background: var(--template-border); }
+.neutral-template .drill-kit-journey .kit-label { font-size: 11px; white-space: nowrap; width: 120%; left: -10%; }
+.neutral-template .cart-items, .neutral-template .order-summary { min-width: 0; }
+.neutral-template .detail-description { color: var(--muted); }
+@media (max-width: 600px) {
+  .neutral-template .hero-object span, .neutral-template .hero-object:not([aria-pressed="true"]) span { font-size: 11px; }
+  .neutral-template .cart-item { grid-template-columns: 88px minmax(0, 1fr); }
+  .neutral-template .cart-item > div { min-width: 0; }
+}
+@media (max-width: 360px) {
+  .neutral-template .cart-item-controls { grid-column: 1 / -1; }
+  .neutral-template .order-summary { padding: 22px 18px; }
+  .neutral-template .order-summary .button { white-space: normal; }
+  .neutral-template .drill-kit-journey .kit-label { font-size: 10px; }
+}

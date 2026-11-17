@@ -1,0 +1,8 @@
+{
+  "slug": "taladro-bauker-12v",
+  "catalogSource": "https://www.homecenter.com.co/homecenter-co/product/484299/taladro-percutor-3-8-pulgadas-12v-13ah-i-l-bauker/484299/",
+  "photographs": ["484299.webp", "484299_12.webp", "484299_01.webp"],
+  "detail": { "file": "drill-12v-detail-real.webp", "source": "484299.webp", "crop": { "left": 115, "top": 105, "width": 590, "height": 325 }, "outputWidth": 900, "webpQuality": 88 },
+  "includesIllustration": { "source": "drill-12v-includes-ai.png", "derivative": "drill-12v-includes-ai.webp", "promptSummary": "Illustrative drill body without battery, one separate battery and one generic charger with cable. No bits, case or second battery.", "processing": "Verified native sRGBA transparency (ImageMagick opaque=False); resized to 1200px, WebP quality 88 with alpha retained. No background removal or invented alpha.", "limitations": "AI illustration, not verified kit photography. Charger appearance and catalog inclusions require confirmation. Generated markings are not specification evidence." },
+  "note": "Existing catalog reference photos; publication rights require review. The retained real detail is a crop, not a fourth camera angle. The includes phase now uses a disclosed illustration. The generated drill-12v-detail-ai.png is not used: its illustrative markings do not match the catalog specifications."
+}

@@ -2,22 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DemoShell } from "@/components/ferready/shell";
 import { isDemoEnabled } from "@/lib/prototype.mjs";
+import { storefront } from "@/data/storefront.mjs";
 
 import "./globals.css";
 import "./ferready.css";
 import "./campaign.css";
+import "./template.css";
 
 const demo = isDemoEnabled(process.env.FERREADY_DEMO);
 export const metadata: Metadata = demo
   ? {
       title: {
-        default: "Ferready — Manos a la obra",
-        template: "%s | Ferready",
+        default: storefront.brandName,
+        template: `%s | ${storefront.brandName}`,
       },
       description:
-        "Herramientas y soluciones para tu casa. Prototipo privado de Ferready en Bogotá.",
+        storefront.description,
       robots: { index: false, follow: false },
-      icons: { icon: "/ferready/mark.svg" },
+      icons: { icon: "/template/product-placeholder.svg" },
     }
   : {
       title: { default: "hive-web", template: "%s · hive-web" },

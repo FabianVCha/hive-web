@@ -1,0 +1,11 @@
+{
+  "origin": "AI-generated isolated product illustrations supplied by the parent session for internal demonstration.",
+  "exactGenerationPrompts": "Not supplied to the implementation session; retain parent generation records before publication.",
+  "disclosure": "Illustrative only. Product shape, lettering, accessories and commercial rights require verification before public use.",
+  "derivation": "Native PNG alpha preserved, transparent margins cropped, resized inside 900px, 12px transparent padding, WebP quality 88 / alpha quality 100. Original PNGs unchanged.",
+  "assets": [
+    { "source": "drill-ai.png", "derived": "drill.webp", "catalogSlug": "taladro-bauker-12v" },
+    { "source": "toolkit-ai.png", "derived": "toolkit.webp", "catalogSlug": "herramientas-44-piezas" },
+    { "source": "shears-ai.png", "derived": "shears.webp", "catalogSlug": "tijera-podar-8" }
+  ]
+}

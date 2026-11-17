@@ -1,0 +1,41 @@
+.thermal-result { min-width: 0; }
+.thermal-receipt {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 340px;
+  margin: 24px auto;
+  padding: 28px 16px;
+  background: #fff;
+  color: #000;
+  border-inline: 1px solid #d5d5d5;
+  border-radius: 0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: .8125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+  user-select: text;
+  mask: linear-gradient(#000 0 0) center / 100% calc(100% - 12px) no-repeat,
+    linear-gradient(135deg, transparent 50%, #000 50%) top left / 12px 6px repeat-x,
+    linear-gradient(315deg, transparent 50%, #000 50%) bottom left / 12px 6px repeat-x;
+}
+.thermal-receipt p, .thermal-receipt dl { margin: 0; }
+.thermal-receipt .receipt-heading { text-align: center; }
+.receipt-heading > strong { font-size: 1rem; }
+.thermal-receipt .receipt-status { margin-top: 12px; font-weight: 700; }
+.thermal-receipt .receipt-block { border-top: 1px dashed #777; margin-top: 16px; padding-top: 16px; }
+.thermal-receipt h2 { margin: 0 0 12px; font: inherit; font-weight: 700; color: inherit; }
+.receipt-contact > div { margin-top: 10px; }
+.receipt-contact dt { font-weight: 700; }
+.thermal-receipt dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.receipt-item + .receipt-item { margin-top: 12px; }
+.receipt-amounts, .receipt-totals > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+.receipt-amounts > *, .receipt-totals dd { max-width: 100%; }
+.receipt-totals > div + div { margin-top: 8px; }
+.receipt-total { font-weight: 700; }
+.thermal-receipt footer p + p { margin-top: 10px; }
+.receipt-thanks { text-align: center; }
+.thermal-result > .button { max-width: 100%; white-space: normal; }
+@media print {
+  .thermal-receipt { mask: none; border: 1px solid #777; color: #000; background: #fff; print-color-adjust: exact; }
+}

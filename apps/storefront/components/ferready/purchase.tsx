@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { GuestCheckout } from "./guest-checkout";
 import { cartTotal } from "@/lib/prototype.mjs";
 import { products, money } from "./catalog";
 import { Icon, useCart } from "./shell";
+import { QuantityInput } from "./quantity-input";
+import { SafeImage } from "./safe-image";
 
 export function CartView() {
   const { cart, ready, setQuantity } = useCart();
@@ -18,7 +20,7 @@ export function CartView() {
       </div>
       <div className="section-heading">
         <h1>
-          Tu próximo arreglo,
+          Tu selección,
           <br />a un paso.
         </h1>
         <Link className="text-link" href="/catalogo">
@@ -30,7 +32,7 @@ export function CartView() {
       ) : !cart.length ? (
         <div className="empty-state">
           <Icon name="bag" size={48} />
-          <h2>Tu caja de herramientas empieza aquí.</h2>
+          <h2>Tu carrito empieza aquí.</h2>
           <p>Aún no tienes productos en el carrito.</p>
           <Link href="/catalogo" className="button button-red">
             Explorar productos <Icon name="arrow" />
@@ -44,7 +46,7 @@ export function CartView() {
               return (
                 <article className="cart-item" key={item.slug}>
                   <Link href={`/p/${item.slug}`}>
-                    <img
+                    <SafeImage
                       src={product.image}
                       width="170"
                       height="170"
@@ -66,29 +68,7 @@ export function CartView() {
                   </div>
                   <div className="cart-item-controls">
                     <strong>{money(product.price * item.quantity)}</strong>
-                    <div className="quantity-control">
-                      <button
-                        disabled={item.quantity === 1}
-                        aria-label={`Disminuir cantidad de ${product.name}`}
-                        onClick={() =>
-                          setQuantity(item.slug, item.quantity - 1)
-                        }
-                      >
-                        <Icon name="minus" size={15} />
-                      </button>
-                      <output aria-label={`Cantidad de ${product.name}`}>
-                        {item.quantity}
-                      </output>
-                      <button
-                        disabled={item.quantity === 20}
-                        aria-label={`Aumentar cantidad de ${product.name}`}
-                        onClick={() =>
-                          setQuantity(item.slug, item.quantity + 1)
-                        }
-                      >
-                        <Icon name="plus" size={15} />
-                      </button>
-                    </div>
+                    <QuantityInput name={product.name} value={item.quantity} onChange={(quantity) => setQuantity(item.slug, quantity)} />
                   </div>
                 </article>
               );
@@ -133,204 +113,7 @@ export function CartView() {
   );
 }
 
-export function CheckoutView() {
-  const { cart, ready, clear } = useCart();
-  const [complete, setComplete] = useState(false);
-  const [zone, setZone] = useState("Bogotá");
-  const [summary, setSummary] = useState(0);
-  const shipping = zone === "Bogotá" ? 12000 : 18000;
-  const total = cartTotal(cart, products);
-  if (complete)
-    return (
-      <div className="checkout-confirmation page-pad">
-        <div className="confirmation-check">
-          <Icon name="check" size={40} />
-        </div>
-        <h1>
-          Así de fácil
-          <br />
-          sería resolverlo.
-        </h1>
-        <p>Completaste el recorrido de compra de Ferready.</p>
-        <div className="confirmation-details">
-          <strong>Simulación completada · {money(summary)}</strong>
-          <p>
-            No se hizo ningún cobro, no se creó un pedido real y no se enviaron
-            tus datos. El carrito de demostración quedó vacío.
-          </p>
-        </div>
-        <Link href="/catalogo" className="button button-dark">
-          Seguir explorando <Icon name="arrow" />
-        </Link>
-      </div>
-    );
-  return (
-    <div className="page-pad purchase-page">
-      <div className="breadcrumb">
-        <Link href="/carrito">Carrito</Link>
-        <span>/</span>
-        <span>Finalizar compra</span>
-      </div>
-      <h1>
-        Ya casi está
-        <br />
-        en tus manos.
-      </h1>
-      <p className="checkout-intro">
-        Sin crear una cuenta. Sin vueltas innecesarias.
-      </p>
-      {!ready ? (
-        <p>Cargando…</p>
-      ) : !cart.length ? (
-        <div className="empty-state">
-          <h2>Primero elige tus productos.</h2>
-          <Link href="/catalogo" className="button button-red">
-            Ir al catálogo <Icon name="arrow" />
-          </Link>
-        </div>
-      ) : (
-        <form
-          className="purchase-layout checkout-form"
-          autoComplete="off"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSummary(total + shipping);
-            clear();
-            setComplete(true);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-        >
-          <div className="checkout-fields">
-            <div className="demo-form-notice">
-              <Icon name="shield" size={22} />
-              <div>
-                <strong>Estás probando una compra, no haciéndola.</strong>
-                <p>
-                  Usa los datos de ejemplo. Nada se envía y no solicitamos
-                  información bancaria.
-                </p>
-              </div>
-            </div>
-            <section>
-              <h2>¿Quién recibe?</h2>
-              <div className="form-grid">
-                <label>
-                  Nombre de ejemplo
-                  <input
-                    name="demo-name"
-                    required
-                    defaultValue="Equipo Ferready"
-                    maxLength={100}
-                  />
-                </label>
-                <label>
-                  Correo de ejemplo
-                  <input
-                    name="demo-email"
-                    type="email"
-                    required
-                    defaultValue="equipo@example.com"
-                    maxLength={150}
-                  />
-                </label>
-              </div>
-            </section>
-            <section>
-              <h2>¿Dónde lo entregamos?</h2>
-              <div className="form-grid">
-                <label>
-                  Zona de entrega
-                  <select
-                    value={zone}
-                    onChange={(e) => setZone(e.target.value)}
-                  >
-                    <option>Bogotá</option>
-                    <option>Chía</option>
-                    <option>Soacha</option>
-                  </select>
-                </label>
-                <label>
-                  Dirección de ejemplo
-                  <input
-                    name="demo-address"
-                    required
-                    defaultValue="Calle de ejemplo 123"
-                    maxLength={150}
-                  />
-                </label>
-              </div>
-              <div className="shipping-method">
-                <Icon name="truck" size={25} />
-                <span>
-                  <strong>Entrega propia Ferready</strong>
-                  <small>
-                    {zone === "Bogotá"
-                      ? "1–2 días hábiles"
-                      : "2–3 días hábiles"}{" "}
-                    · plazo simulado
-                  </small>
-                </span>
-                <strong>{money(shipping)}</strong>
-              </div>
-            </section>
-            <section>
-              <h2>Pago de demostración</h2>
-              <div className="payment-demo">
-                <Icon name="check" size={20} />
-                <div>
-                  <strong>Simulador, sin cobro</strong>
-                  <p>
-                    La pasarela de pago se integrará después de aprobar el
-                    diseño. Esta demo no pide tarjetas ni credenciales.
-                  </p>
-                </div>
-              </div>
-            </section>
-          </div>
-          <aside className="order-summary">
-            <h2>Tu pedido de ejemplo</h2>
-            <div className="checkout-items">
-              {cart.map((item) => {
-                const p = products.find((p) => p.slug === item.slug)!;
-                return (
-                  <div key={item.slug}>
-                    <img src={p.image} width="70" height="70" alt="" />
-                    <span>
-                      {p.name}
-                      <small>Cantidad: {item.quantity}</small>
-                    </span>
-                    <strong>{money(p.price * item.quantity)}</strong>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="summary-row">
-              <span>Subtotal</span>
-              <span>{money(total)}</span>
-            </div>
-            <div className="summary-row">
-              <span>Envío a {zone}</span>
-              <span>{money(shipping)}</span>
-            </div>
-            <div className="summary-total">
-              <span>Total de ejemplo</span>
-              <strong>{money(total + shipping)}</strong>
-            </div>
-            <button type="submit" className="button button-red">
-              Finalizar simulación <Icon name="arrow" size={20} />
-            </button>
-            <p className="demo-note">
-              Este botón no realiza pagos ni genera pedidos reales.
-            </p>
-            <Link href="/carrito" className="text-link">
-              Volver al carrito
-            </Link>
-          </aside>
-        </form>
-      )}
-    </div>
-  );
-}
+export function CheckoutView() { return <GuestCheckout />; }
 
 export function InformationView() {
   return (
@@ -346,14 +129,13 @@ export function InformationView() {
         Comprar con confianza.
       </h1>
       <p className="information-intro">
-        Lo que necesitas saber de esta primera versión de Ferready.
+        Información de ejemplo para personalizar tu tienda.
       </p>
       <section>
         <h2>Entregas cerca de ti.</h2>
         <p>
-          El lanzamiento está pensado para Bogotá y zonas cercanas, con entregas
-          propias. Para probar la experiencia, esta demo muestra Bogotá, Chía y
-          Soacha.
+          Para probar el flujo, esta plantilla usa Bogotá, Chía y Soacha como
+          zonas de ejemplo. No representan la cobertura de una tienda activa.
         </p>
         <p>
           Tarifas de ejemplo: Bogotá $12.000 y alrededores $18.000. Plazos de
@@ -370,9 +152,8 @@ export function InformationView() {
           ficha.
         </p>
         <p>
-          Las recomendaciones no sustituyen las instrucciones del fabricante ni
-          una evaluación profesional para trabajos eléctricos, estructurales o
-          con riesgo.
+          Reemplaza estos textos por la información real de tus productos antes
+          de publicar el catálogo.
         </p>
       </section>
       <section>
@@ -388,30 +169,19 @@ export function InformationView() {
         <h2>Una demostración, no una tienda activa.</h2>
         <p>
           Precios, existencias, envíos y el flujo de compra son simulados. No
-          hay pasarela de pago, pedidos reales, formularios enviados ni servicio
-          de atención humana. Solo el carrito se guarda en este navegador.
+          hay pasarela de pago, pedidos reales ni formularios enviados. El carrito
+          y las selecciones de objetivos se guardan en este navegador. Los datos
+          de entrega solo permanecen en memoria; el PDF se descarga localmente.
         </p>
         <p>
-          El catálogo contiene 15 candidatos, no referencias aprobadas por un
-          proveedor. Las fotografías de Homecenter y Easy son referencias para
-          revisión interna; el banner usa fotografía de referencia y colores de
-          marca. La generación editorial con Higgsfield está pendiente. Las
-          fotografías comerciales requieren autorización antes de un lanzamiento
-          público.
+          El catálogo contiene tres productos de ejemplo con espacios reservados
+          para imágenes. Los nombres, descripciones, precios y contenidos no
+          representan productos a la venta.
         </p>
         <p>
-          No se atribuyen reseñas ni calificaciones de otros comercios a
-          Ferready. Las especificaciones y el contenido definitivo deben
-          validarse con el proveedor.
+          Personaliza la identidad, el catálogo y las condiciones comerciales
+          antes de habilitar ventas. No se incluyen reseñas ni garantías ficticias.
         </p>
-        <a
-          className="text-link"
-          href="/ferready/image-sources.json"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Consultar fuentes de las imágenes <Icon name="diagonal" size={18} />
-        </a>
       </section>
       <Link className="button button-dark" href="/catalogo">
         Volver a la tienda <Icon name="arrow" />

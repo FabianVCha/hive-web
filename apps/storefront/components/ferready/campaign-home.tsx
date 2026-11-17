@@ -1,98 +1,82 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
-import { campaign } from "@/lib/campaign.mjs";
-import { products, categories, money } from "./catalog";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { AddButton, MotionButton } from "./selection-motion";
+import { objectives } from "@/data/ferready-objectives";
+import { objectiveItems, restoreObjectiveDraft } from "@/lib/objectives.mjs";
+import { QuantityInput } from "./quantity-input";
+import { products, money } from "./catalog";
 import { Icon, useCart } from "./shell";
-import { ProductFigure } from "./product-figure";
 import { ProductCard } from "./storefront";
+import { SafeImage } from "./safe-image";
+import { ProductHero } from "./product-hero";
 
 export function CampaignHome() {
-  const root = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState(0);
-  const [quantity, setQuantity] = useState(1);
-  const { add, ready } = useCart();
-  const selection = campaign.featured.flatMap((slug) => products.filter((p) => p.slug === slug));
-  const product = selection[selected];
+  const { addSelection, ready } = useCart();
+  const [selected, setSelected] = useState(objectives[0].id);
+  const [items, setItems] = useState(() => objectiveItems(objectives[0], products));
+  const [draftReady, setDraftReady] = useState(false);
+  const workspace = useRef<HTMLDivElement>(null);
+  const animateSelection = useRef(false);
+  const bridge = useRef<Animation | null>(null);
+  useEffect(() => () => bridge.current?.cancel(), []);
+  function changeObjective(id: string, pointer: boolean) {
+    if (id === selected) return;
+    bridge.current?.cancel();
+    animateSelection.current = pointer;
+    setSelected(id);
+    setItems(objectiveItems(objectives.find((entry) => entry.id === id)!, products));
+  }
+  useLayoutEffect(() => {
+    if (!animateSelection.current || !workspace.current) return;
+    animateSelection.current = false;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const easing = getComputedStyle(workspace.current).getPropertyValue("--selection-ease-out").trim();
+    bridge.current = workspace.current.animate(
+        [{ opacity: .4, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }],
+        { duration: 220, easing: easing || "cubic-bezier(0.23, 1, 0.32, 1)" },
+      );
+    return () => bridge.current?.cancel();
+  }, [selected]);
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-    const media = gsap.matchMedia();
-    media.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from(".campaign-copy > *, .campaign-buy > *", { y: 22, opacity: 0, stagger: 0.07, duration: 0.7, ease: "power3.out", clearProps: "opacity,transform" });
-      gsap.to(".campaign-stage", { yPercent: 8, rotation: 2, ease: "none", scrollTrigger: { trigger: ".campaign-hero", start: "top top", end: "bottom top", scrub: 0.5 } });
-      gsap.to(".scene-case", { yPercent: -12, rotation: -7, ease: "none", scrollTrigger: { trigger: ".campaign-hero", start: "top top", end: "bottom top", scrub: 0.7 } });
-      gsap.utils.toArray<HTMLElement>("[data-campaign-reveal]").forEach((section) => {
-        gsap.from(section.children, { y: 26, opacity: 0, stagger: 0.08, duration: 0.7, ease: "power3.out", scrollTrigger: { trigger: section, start: "top 90%", once: true }, clearProps: "opacity,transform" });
-      });
-    }, root);
-    return () => media.revert();
+    try {
+      const draft = restoreObjectiveDraft(sessionStorage.getItem("storefront-objective-draft-v1"), objectives, products);
+      setSelected(draft.selected);
+      setItems(draft.items);
+    } catch { /* Storage may be unavailable; editing remains usable. */ }
+    setDraftReady(true);
   }, []);
-  return (
-    <div ref={root} className="campaign-home">
-      <section className="campaign-hero" aria-label="Selección de campaña">
-        <div className="campaign-wedge" aria-hidden="true" />
-        <div className="campaign-worktop" aria-hidden="true" />
-        <div className="campaign-copy">
-          <h1>{campaign.headline}</h1>
-          <p>{campaign.description}</p>
-          <Link className="campaign-explore" href="/catalogo">Explorar la selección <Icon name="arrow" size={20} /></Link>
+  useEffect(() => {
+    if (!draftReady) return;
+    try { sessionStorage.setItem("storefront-objective-draft-v1", JSON.stringify({ version: 1, selected, items })); } catch { /* Keep the in-memory selection. */ }
+  }, [draftReady, selected, items]);
+  const objective = objectives.find((entry) => entry.id === selected)!;
+  const total = items.reduce((sum, item) => sum + products.find((product) => product.slug === item.slug)!.price * item.quantity, 0);
+  return <div className="campaign-home" onPointerDownCapture={(event) => { event.currentTarget.dataset.modality = "pointer"; }} onKeyDownCapture={(event) => { event.currentTarget.dataset.modality = "keyboard"; bridge.current?.cancel(); }}>
+    <ProductHero />
+    <section id="por-tarea" className="campaign-section objective-section" aria-labelledby="objectives-title">
+      <div className="section-heading"><div><h2 id="objectives-title">Elige tu próximo proyecto.</h2><p>Elige un objetivo, ajusta los productos y llévalos al carrito.</p></div><Link className="text-link" href="/catalogo">Prefiero explorar <Icon name="arrow" size={20} /></Link></div>
+      <div className="objective-options" role="group" aria-label="Elige un objetivo">
+        {objectives.map((entry) => <MotionButton key={entry.id} disabled={!draftReady} aria-pressed={entry.id === selected} onClick={(event) => changeObjective(entry.id, event.detail > 0)}><SafeImage src={entry.image} alt="" width="90" height="90" /><span>{entry.title}</span><span className="selection-feedback-icon" aria-hidden="true"><span><Icon name="arrow" size={21} /></span><span><Icon name="check" size={21} /></span></span></MotionButton>)}
+      </div>
+      <div className="objective-workspace" ref={workspace} aria-busy={!draftReady} inert={!draftReady}>
+        <div className="objective-intro"><h3>{objective.title}</h3><p>{objective.description}</p><span>Selección de ejemplo. Ajusta las cantidades según lo que necesites.</span><button className="text-link" onClick={() => setItems(objectiveItems(objective, products))}>Restablecer selección <Icon name="arrow" size={18} /></button></div>
+        <div className="objective-products">
+          {items.length === 0 && <p className="objective-empty">Quitaste todos los productos. Restablece la selección o elige otro objetivo.</p>}
+          {items.map((item) => {
+            const product = products.find((entry) => entry.slug === item.slug)!;
+            return <article className="objective-product" key={item.slug}>
+              <Link href={`/p/${item.slug}`}><SafeImage src={product.image} alt={product.name} width="96" height="96" /></Link>
+              <div className="objective-product-name"><Link href={`/p/${item.slug}`}>{product.name}</Link><span>{money(product.price)} por unidad</span><button onClick={() => setItems(items.filter((entry) => entry.slug !== item.slug))}>Quitar</button></div>
+              <QuantityInput name={product.name} value={item.quantity} onChange={(quantity) => setItems((current) => current.map((entry) => entry.slug === item.slug ? { ...entry, quantity } : entry))} />
+              <strong>{money(product.price * item.quantity)}</strong>
+            </article>;
+          })}
+          <div className="objective-summary"><div><span>Total de la selección</span><strong>{money(total)}</strong><small>Precios de demostración · envío no incluido.</small></div><AddButton className="button button-red" disabled={!ready || !items.length} onClick={() => addSelection(items)}>Agregar seleccionados</AddButton></div>
         </div>
-        <div className="campaign-stage" aria-live="polite">
-          <ProductFigure className="scene-case" src="/ferready/products/279788.webp" alt="Caja y organizador Bauker" />
-          <ProductFigure key={product.slug} className="scene-main" src={product.image} alt={product.name} priority />
-          <ProductFigure className="scene-bits" src="/ferready/products/167850.webp" alt="Brocas para elegir según el material" />
-        </div>
-        <div className="campaign-buy">
-          <Link href={`/p/${product.slug}`}><h2>{product.name}</h2></Link>
-          <p className="campaign-price">{money(product.price)} <small>COP</small></p>
-          <p className="campaign-demo">Precio de demostración.</p>
-          <div className="campaign-purchase">
-            <div className="quantity-control">
-              <button aria-label="Disminuir cantidad destacada" disabled={quantity === 1} onClick={() => setQuantity(quantity - 1)}><Icon name="minus" size={16} /></button>
-              <output aria-label="Cantidad destacada">{quantity}</output>
-              <button aria-label="Aumentar cantidad destacada" disabled={quantity === 20} onClick={() => setQuantity(quantity + 1)}><Icon name="plus" size={16} /></button>
-            </div>
-            <button className="button button-red" disabled={!ready} onClick={() => add(product.slug, quantity)}>Agregar al carrito <Icon name="bag" size={19} /></button>
-          </div>
-          <Link className="campaign-product-link" href={`/p/${product.slug}`}>Conócelo de cerca <Icon name="diagonal" size={18} /></Link>
-        </div>
-        <div className="campaign-selector" role="group" aria-label="Producto de campaña">
-          {selection.map((p, index) => <button key={p.slug} aria-pressed={selected === index} onClick={() => { setSelected(index); setQuantity(1); }}><span>{p.brand}</span>{index === 0 ? "Para crear" : index === 1 ? "Para organizar" : "Para resolver"}<Icon name="arrow" size={17} /></button>)}
-        </div>
-      </section>
-
-      <section id="por-tarea" className="campaign-section project-section" data-campaign-reveal>
-        <div className="section-heading"><h2>Elige tu próximo proyecto.</h2><Link href="/catalogo" className="text-link">O ve directo al catálogo <Icon name="arrow" size={20} /></Link></div>
-        <div className="campaign-projects">
-          {campaign.projects.map((project) => <Link className={`campaign-project project-${project.tone}`} href={project.href} key={project.href}>
-            <ProductFigure src={project.image} alt={project.title} />
-            <div><h3>{project.title}</h3><p>{project.description}</p></div><Icon name="diagonal" size={24} />
-          </Link>)}
-        </div>
-      </section>
-
-      <section className="campaign-study" data-campaign-reveal>
-        <div className="study-visual"><ProductFigure src={products[0].image} alt={products[0].name} /><span className="study-fact">{Object.values(products[0].specs)[0]} <small>La referencia, de cerca.</small></span></div>
-        <div className="study-copy"><h2>No solo lo mires.<br />Conócelo.</h2><p>Recorre sus detalles, revisa qué incluye y descubre si encaja con lo que quieres hacer.</p><Link className="button button-paper" href={`/p/${products[0].slug}#recorrido`}>Explorar el producto <Icon name="diagonal" size={21} /></Link><span className="study-disclosure">Imágenes de referencia · experiencia de demostración.</span></div>
-      </section>
-
-      <section className="campaign-section" data-campaign-reveal>
-        <div className="section-heading"><div><h2>Tu siguiente buena elección.</h2><p>Herramientas, piezas y posibilidades.</p></div><Link className="text-link" href="/catalogo">Ver todos los productos <Icon name="arrow" /></Link></div>
-        <div className="product-grid">{[products[0], products[5], products[6], products[14]].map((p) => <ProductCard product={p} key={p.slug} />)}</div>
-      </section>
-
-      <section className="campaign-section category-index" data-campaign-reveal>
-        <h2>Encuentra tu punto de partida.</h2>
-        <div>{categories.map((category) => <Link key={category.slug} href={`/c/${category.slug}`}><span>{category.name}</span><Icon name="arrow" size={25} /></Link>)}</div>
-      </section>
-
-      <section className="campaign-close" data-campaign-reveal>
-        <div><h2>De la idea<br />al siguiente paso.</h2><p>Explora, revisa los detalles y arma tu pedido de demostración.</p><Link className="button button-dark" href="/catalogo">Comprar en la web <Icon name="arrow" /></Link></div>
-        <ProductFigure src="/ferready/products/279788.webp" alt="Caja y organizador de herramientas Bauker" />
-      </section>
-    </div>
-  );
+      </div>
+    </section>
+    <section className="campaign-section home-products"><div className="section-heading"><h2>Productos de ejemplo</h2><Link href="/catalogo" className="text-link">Ver catálogo <Icon name="arrow" /></Link></div><div className="product-grid">{products.map((product) => <ProductCard product={product} key={product.slug} />)}</div></section>
+  </div>;
 }

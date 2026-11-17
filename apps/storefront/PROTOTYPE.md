@@ -62,3 +62,12 @@ The current demonstration homepage uses the approved campaign-studio direction, 
 Additional checks: `node --test tests/campaign.test.mjs` and the host-Playwright function `tests/browser-campaign.probe.js` (currently points at the isolated preview on port 8002 and uses a fresh browser context).
 
 An isolated production build was checked with `npm run build -- --webpack`. The default Turbopack attempt could not resolve dependencies through the scratch copy's external `node_modules` junction; this is not claimed as a successful default build or a framework migration. Do not stop another developer's preview process to fix that isolation issue.
+# Guest checkout test payment
+
+The guest flow is delivery details → editable order review → **Simular pago** → thermal receipt. Simulation is enabled for testing only: no processor, real charge, order submission or personal-data storage is involved. The cart remains available.
+
+The non-fiscal receipt appears on screen and can be downloaded only after simulated payment. Both use the same monochrome, 34-character Courier layout; the PDF is 80 mm wide with content-based height. Pending snapshots are rejected by the receipt/PDF generator. This client-side state check is a demo-flow guard, not a real payment authorization mechanism.
+
+Receipt data is copied and frozen at simulation time. Later cart changes do not alter an existing receipt. “Iniciar nueva simulación” discards it and returns to editable details; the next simulation gets a new reference. Reloading forgets delivery details and simulation state, while retaining the demo cart. Unknown delivery destinations retain “por confirmar” shipping and a partial total.
+
+Verification: `npm test`, `npm run lint`, and `node tests/browser-guest-checkout.probe.cjs` from `apps/storefront`. The browser probe requires the existing local Chromium/Playwright installation and `pdfinfo`/`pdftotext`; its evidence is written to `/tmp/opencode/thermal-receipt`.

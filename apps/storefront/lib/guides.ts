@@ -1,6 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { storefront } from "../data/storefront.mjs";
+import { isDemoEnabled } from "./prototype.mjs";
 
 const GUIDES_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "content", "guias");
 
@@ -32,6 +34,7 @@ function parseFrontMatter(raw: string): { data: Record<string, string>; body: st
 }
 
 export async function listGuides(): Promise<Omit<Guide, "markdown">[]> {
+  if (isDemoEnabled(process.env.FERREADY_DEMO)) return storefront.guides.map(({ markdown, ...guide }) => guide);
   let files: string[] = [];
   try {
     files = await readdir(GUIDES_DIR);
@@ -54,6 +57,7 @@ export async function listGuides(): Promise<Omit<Guide, "markdown">[]> {
 }
 
 export async function getGuide(slug: string): Promise<Guide | null> {
+  if (isDemoEnabled(process.env.FERREADY_DEMO)) return storefront.guides.find(guide => guide.slug === slug) ?? null;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
     return null;
   }

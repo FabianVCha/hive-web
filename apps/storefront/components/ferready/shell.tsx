@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { restoreCart, updateCart, type CartItem } from "@/lib/prototype.mjs";
 import { products, categories } from "./catalog";
-import { campaign } from "@/lib/campaign.mjs";
+import { selectionResult, type ObjectiveItem } from "@/lib/objectives.mjs";
+import { RouteMotion } from "./route-motion";
+import { storefront } from "@/data/storefront.mjs";
+import type { CSSProperties } from "react";
 
 export function Icon({ name, size = 22 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
@@ -77,7 +80,8 @@ type CartContextValue = {
   cart: CartItem[];
   ready: boolean;
   setQuantity: (slug: string, quantity: number) => void;
-  add: (slug: string, quantity?: number) => void;
+  add: (slug: string, quantity?: number) => boolean;
+  addSelection: (items: ObjectiveItem[]) => boolean;
   clear: () => void;
 };
 const CartContext = createContext<CartContextValue | null>(null);
@@ -93,26 +97,29 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState("");
   const [menu, setMenu] = useState(false);
-  const path = usePathname();
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const menuNav = useRef<HTMLElement>(null);
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const observer = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("fr-enter");
-            observer.unobserve(entry.target);
-          }
-        }),
-      { threshold: 0.12 },
-    );
-    document
-      .querySelectorAll(
-        ".hero-copy > *, .hero-mini > a, .section-heading, .category-strip > a, .product-card, .object-list, .object-visual, .task-tile, .closing-banner > *, .footer-top > *",
-      )
-      .forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
-  }, [path]);
+    if (!menu) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenu(false);
+      menuTrigger.current?.focus();
+    };
+    const outside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!menuNav.current?.contains(target) && !menuTrigger.current?.contains(target)) setMenu(false);
+    };
+    document.addEventListener("keydown", escape);
+    document.addEventListener("pointerdown", outside);
+    return () => {
+      document.removeEventListener("keydown", escape);
+      document.removeEventListener("pointerdown", outside);
+    };
+  }, [menu]);
+  const path = usePathname();
   useEffect(() => {
     try {
       setCart(
@@ -137,50 +144,42 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   }, [path]);
   useEffect(() => {
     if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3500);
+    const timer = setTimeout(() => setToast(""), 12000);
     return () => clearTimeout(timer);
   }, [toast]);
   const setQuantity = (slug: string, quantity: number) =>
     setCart((current) => updateCart(current, slug, quantity, products));
   const add = (slug: string, quantity = 1) => {
-    if (!ready) return;
-    setCart((current) =>
-      updateCart(
-        current,
-        slug,
-        Math.min(
-          20,
-          (current.find((p) => p.slug === slug)?.quantity || 0) + quantity,
-        ),
-        products,
-      ),
-    );
-    setToast("Producto añadido a tu carrito");
+    if (!ready) return false;
+    return addSelection([{ slug, quantity }]);
+  };
+  const addSelection = (items: ObjectiveItem[]) => {
+    if (!ready) return false;
+    const result = selectionResult(cartRef.current, items, products);
+    cartRef.current = result.cart;
+    setCart(result.cart);
+    setToast(result.message);
+    return result.added > 0;
   };
   return (
     <CartContext.Provider
-      value={{ cart, ready, setQuantity, add, clear: () => setCart([]) }}
+      value={{ cart, ready, setQuantity, add, addSelection, clear: () => setCart([]) }}
     >
-      <div className="ferready campaign-theme">
+      <div className="ferready campaign-theme neutral-template" style={Object.fromEntries(Object.entries(storefront.tokens).map(([key, value]) => [`--template-${key}`, value])) as CSSProperties}>
         <a className="skip-link" href="#contenido">
           Ir al contenido
         </a>
         <div className="announcement">
           <span>
-            <Icon name="truck" size={17} /> De nuestra ferretería a tu puerta.
+            <Icon name="truck" size={17} /> Tienda de demostración.
           </span>
           <span>
             Bogotá y alrededores <Icon name="pin" size={15} />
           </span>
         </div>
         <header className="fr-header">
-          <Link href="/" className="fr-brand" aria-label="Ferready, inicio">
-            <img
-              src={campaign.brand.logoLight}
-              alt="Ferready"
-              width="190"
-              height="48"
-            />
+          <Link href="/" className="fr-brand" aria-label={`${storefront.brandName}, inicio`}>
+            <span className="template-wordmark">{storefront.brandName}</span>
           </Link>
           <form action="/catalogo" className="header-search" role="search">
             <Icon name="search" size={20} />
@@ -195,9 +194,6 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
             </button>
           </form>
           <div className="header-actions">
-            <Link href="/catalogo" className="shop-link">
-              Explorar tienda <Icon name="diagonal" size={17} />
-            </Link>
             <Link
               href="/carrito"
               className="cart-link"
@@ -209,6 +205,8 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
             <button
+              ref={menuTrigger}
+              aria-controls="category-navigation"
               className="mobile-menu icon-button"
               onClick={() => setMenu(!menu)}
               aria-expanded={menu}
@@ -219,6 +217,9 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <nav
+          id="category-navigation"
+          ref={menuNav}
+          onClick={(event) => { if ((event.target as Element).closest("a")) setMenu(false); }}
           className={`category-nav ${menu ? "is-open" : ""}`}
           aria-label="Categorías de productos"
         >
@@ -231,34 +232,29 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
           <Link href="/#por-tarea" className="task-nav">
-            Ideas para tu próximo arreglo <Icon name="arrow" size={15} />
+            Explorar por objetivo <Icon name="arrow" size={15} />
           </Link>
         </nav>
         <main id="contenido" className="fr-main">
-          {children}
+          <RouteMotion>{children}</RouteMotion>
         </main>
         <footer className="fr-footer">
           <div className="footer-top">
             <div>
-              <img
-                src={campaign.brand.logoLight}
-                width="210"
-                height="50"
-                alt="Ferready"
-              />
+              <span className="template-wordmark">{storefront.brandName}</span>
               <p>
-                Buenas herramientas.
+                Tu contenido.
                 <br />
-                Mejores soluciones.
+                Tu espacio.
               </p>
             </div>
             <div>
-              <h2>Tu ferretería, a un clic.</h2>
+              <h2>Explora tu tienda.</h2>
               <Link href="/catalogo">
                 Todos los productos <Icon name="arrow" />
               </Link>
               <Link href="/#por-tarea">
-                Encuentra por tarea <Icon name="arrow" />
+                Encuentra por objetivo <Icon name="arrow" />
               </Link>
               <Link href="/informacion">
                 Envíos y preguntas frecuentes <Icon name="arrow" />
@@ -267,14 +263,14 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
             <div className="footer-location">
               <Icon name="pin" size={26} />
               <p>
-                Bogotá, Colombia.
-                <br />Y un poco más cerca de resolverlo.
+                Plantilla de demostración.
+                <br />Personaliza tu información.
               </p>
               <span>Precios en pesos colombianos.</span>
             </div>
           </div>
           <div className="footer-bottom">
-            <span>© {new Date().getFullYear()} Ferready.</span>
+            <span>© {new Date().getFullYear()} {storefront.brandName}.</span>
             <span>
               Prototipo privado · imágenes y condiciones comerciales de
               demostración.

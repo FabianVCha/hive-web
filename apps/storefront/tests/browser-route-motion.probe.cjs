@@ -1,0 +1,101 @@
+// Optional browser probe: PLAYWRIGHT_MODULE points to a host installation.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+
+(async () => {
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const origin = process.env.PROBE_ORIGIN || 'http://localhost:8000';
+  const out = process.env.PROBE_OUTPUT || '/tmp/opencode/route-motion';
+  fs.mkdirSync(out, { recursive: true });
+  await page.addInitScript(() => {
+    window.motionFrames = [];
+    function sample() {
+      for (const selector of ['.route-surface', '.objective-workspace']) {
+        const element = document.querySelector(selector);
+        const animation = element?.getAnimations().find(a => a.playState === 'running');
+        if (animation) window.motionFrames.push({ path: location.pathname, selector, time: animation.currentTime, duration: animation.effect.getTiming().duration, opacity: getComputedStyle(element).opacity, transform: getComputedStyle(element).transform });
+      }
+      requestAnimationFrame(sample);
+    }
+    requestAnimationFrame(sample);
+  });
+  await page.goto(origin);
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await page.reload();
+  await page.locator('.objective-workspace[aria-busy="false"]').waitFor();
+  const goals = page.locator('.objective-options > button');
+  await goals.nth(1).click();
+  await page.waitForFunction(() => window.motionFrames.some(f => f.selector === '.objective-workspace'));
+  await page.locator('.objective-workspace').evaluate(e => { const a = e.getAnimations()[0]; if (a) { a.pause(); a.currentTime = 60; } });
+  await page.screenshot({ path: `${out}/project-in-flight.png` });
+  await page.locator('.objective-workspace').evaluate(e => e.getAnimations().forEach(a => a.play()));
+  await goals.nth(2).click();
+  await goals.nth(0).click();
+  assert.equal(await goals.nth(0).getAttribute('aria-pressed'), 'true');
+  assert(await page.locator('.objective-workspace').evaluate(e => e.getAnimations().length <= 1));
+  await page.locator('.objective-product input').first().fill('3');
+  await page.locator('.objective-product input').first().blur();
+  const draft = await page.evaluate(() => sessionStorage.getItem('storefront-objective-draft-v1'));
+  await page.locator('.hero-catalog-link').click();
+  await page.waitForURL('**/catalogo');
+  await page.waitForFunction(() => window.motionFrames.some(f => f.path === '/catalogo'));
+  await page.locator('.route-surface').evaluate(e => { const a = e.getAnimations()[0]; if (a) { a.pause(); a.currentTime = 60; } });
+  await page.screenshot({ path: `${out}/catalog-in-flight.png` });
+  await page.locator('.route-surface').evaluate(e => e.getAnimations().forEach(a => a.play()));
+  await page.locator('.product-image').first().click();
+  await page.waitForURL('**/p/**');
+  const productPath = new URL(page.url()).pathname;
+  await page.waitForFunction(path => window.motionFrames.some(f => f.path === path), productPath);
+  await page.getByRole('button', { name: 'Añadir al carrito', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: 'Añadir al carrito', exact: true }).getAttribute('data-added'), 'true');
+  await page.locator('.product-page .breadcrumb a').nth(1).click();
+  await page.waitForURL('**/c/**');
+  const categoryPath = new URL(page.url()).pathname;
+  await page.waitForFunction(path => window.motionFrames.some(f => f.path === path), categoryPath);
+  await page.locator('a[href="/carrito"]').first().click();
+  await page.waitForURL('**/carrito');
+  await page.waitForFunction(() => window.motionFrames.some(f => f.path === '/carrito'));
+  await page.locator('.cart-item').first().waitFor();
+  await page.goBack();
+  await page.waitForURL(`**${categoryPath}`);
+  await page.goForward();
+  await page.waitForURL('**/carrito');
+  await page.locator('.cart-item').first().waitFor();
+  await page.locator('main .breadcrumb a').first().click();
+  await page.locator('.objective-workspace[aria-busy="false"]').waitFor();
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('storefront-objective-draft-v1')), draft);
+  assert.equal(await page.locator('.objective-product input').first().inputValue(), '3');
+  await goals.nth(1).focus();
+  await page.keyboard.press('Space');
+  assert.equal(await page.locator('.objective-workspace').evaluate(e => e.getAnimations().length), 0);
+  await page.locator('.hero-catalog-link').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForURL('**/catalogo');
+  assert.equal(await page.locator('.route-surface').evaluate(e => e.getAnimations().length), 0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('.product-image').first().click();
+  await page.waitForURL('**/p/**');
+  assert.equal(await page.locator('.route-surface').evaluate(e => e.getAnimations().length), 0);
+  await page.locator('.product-page .breadcrumb a').first().click();
+  await page.locator('.objective-workspace[aria-busy="false"]').waitFor();
+  await goals.nth(2).click();
+  assert.equal(await page.locator('.objective-workspace').evaluate(e => e.getAnimations().length), 0);
+  const frames = await page.evaluate(() => window.motionFrames);
+  const moving = frames.filter(frame => frame.time > 0 && frame.time < 220 && frame.opacity < 1 && frame.transform !== 'none');
+  assert(moving.some(frame => frame.selector === '.objective-workspace'));
+  for (const path of ['/catalogo', productPath, categoryPath, '/carrito']) assert(moving.some(frame => frame.path === path && frame.selector === '.route-surface'), `No real moving frame at ${path}`);
+  fs.writeFileSync(`${out}/frames.json`, JSON.stringify(frames, null, 2));
+  // A failed image must not block the panel or its animation.
+  await page.route('**/ferready/products/**', route => route.abort());
+  await page.reload();
+  await page.locator('.objective-workspace[aria-busy="false"]').waitFor();
+  await page.locator('img[data-image-fallback="true"]').first().waitFor();
+  assert(await page.locator('.objective-product').count() > 0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.screenshot({ path: `${out}/mobile-reduced-fallback.png`, fullPage: true });
+  console.log(JSON.stringify({ passed: true, routes: ['/catalogo', productPath, categoryPath, '/carrito'], rapidSelection: true, keyboardInstant: true, reducedInstant: true, draftPreserved: true, fallback: true, movingFrames: moving.length }));
+  await browser.close();
+})().catch(error => { console.error(error); process.exit(1); });

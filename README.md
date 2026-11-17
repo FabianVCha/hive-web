@@ -58,6 +58,36 @@ pública de cliente, no un secreto de servidor.
 
 ## Catálogo
 
+### Plantilla neutral de demostración
+
+Activa `FERREADY_DEMO=1` para usar la plantilla sin backend. La variable y los
+directorios `ferready` conservan sus nombres históricos por compatibilidad; no
+representan la identidad pública de la demo actual.
+
+- Personaliza nombre, textos principales, colores, productos, categorías,
+  objetivos, piezas del empaque y guía en `apps/storefront/data/storefront.mjs`.
+- `apps/storefront/app/template.css` aplica el lienzo blanco y los grises.
+- Reemplaza `public/template/product-placeholder.svg` o las rutas de imagen de
+  la configuración por tus propios recursos autorizados.
+- Las rutas de ejemplo son `/p/producto-ejemplo-1` y `/c/categoria-1`.
+  Se conservan los patrones de rutas; los antiguos handles de demo ya no existen.
+- Precios y condiciones son ejemplos. El checkout simula pago sin cobro ni
+  pedido real y conserva el carrito. El PDF no es un documento fiscal.
+- El catálogo de Medusa y sus rutas fuera de la demo no cambian. Los fixtures
+  históricos en `data/prototype-products.json` siguen aislados para pruebas.
+
+Verificación adicional desde `apps/storefront` (servidor demo en el puerto 8000):
+
+```bash
+node tests/browser-template.probe.cjs
+node tests/browser-auto-packing-transition.probe.cjs
+node tests/browser-guest-checkout.probe.cjs
+```
+
+Las capturas y el PDF de prueba se guardan en `/tmp/opencode/neutral-template`.
+
+### Catálogo real aprobado
+
 `data/approved/catalog.json` solo contiene referencias **aprobadas a mano**:
 
 ```json
