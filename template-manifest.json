@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "template": {
+    "name": "hive-web",
+    "version": "0.1.0"
+  },
+  "project": {
+    "id": "template",
+    "configPath": "apps/storefront/data/project-config.mjs"
+  },
+  "sync": {
+    "strategy": "pull-request",
+    "baseBranch": "main",
+    "templateRef": "main",
+    "projectOwnedPaths": [
+      "apps/storefront/data/project-config.mjs",
+      "apps/storefront/public/project/**",
+      ".env",
+      ".env.*"
+    ],
+    "templateOwnedPaths": [
+      "apps/",
+      "packages/",
+      "scripts/",
+      "infra/",
+      ".github/workflows/"
+    ]
+  }
+}

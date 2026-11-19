@@ -20,6 +20,8 @@ jobs:
         run: node --test packages/catalog-schema/tests/*.test.mjs
       - name: Validate approved catalog file
         run: node scripts/validate-catalog.mjs
+      - name: Validate template manifest
+        run: node --test scripts/template-manifest.test.mjs
 
   storefront:
     name: storefront

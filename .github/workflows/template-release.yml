@@ -1,0 +1,48 @@
+name: Notify template consumers
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published template version
+        required: true
+        type: string
+      ref:
+        description: Git ref consumers should merge
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify registered consumers
+        uses: actions/github-script@v7
+        env:
+          TEMPLATE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
+          TEMPLATE_REF: ${{ github.event.release.tag_name || inputs.ref || 'main' }}
+        with:
+          github-token: ${{ secrets.TEMPLATE_UPDATE_TOKEN || github.token }}
+          script: |
+            const consumers = require('./.github/template-consumers.json');
+            for (const consumer of consumers) {
+              await github.rest.repos.createDispatchEvent({
+                owner: consumer.owner,
+                repo: consumer.repo,
+                event_type: 'template-release',
+                client_payload: {
+                  repository: context.repo.owner + '/' + context.repo.repo,
+                  version: process.env.TEMPLATE_VERSION,
+                  ref: process.env.TEMPLATE_REF
+                }
+              });
+              core.info(`Notified ${consumer.owner}/${consumer.repo}`);
+            }
+            if (consumers.length === 0) core.info('No template consumers are registered yet.');

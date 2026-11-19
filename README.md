@@ -1,5 +1,32 @@
 # hive-web
 
+## 🚀 ACTUALIZACIONES DE LA TEMPLATE
+
+> [!IMPORTANT]
+> **Este repositorio es la fuente de verdad del código compartido.**
+>
+> Cuando publiques una nueva release, los proyectos derivados recibirán una
+> propuesta automática de actualización mediante un **Pull Request**.
+>
+> **Nunca se hace push directo a `main`.** Cada proyecto conserva su marca,
+> catálogo, imágenes, secretos y configuración propia; la actualización trae
+> únicamente el código común y se revisa antes de fusionarse.
+
+### Flujo
+
+```text
+Nueva release de hive-web
+          ↓
+Notificación a proyectos derivados
+          ↓
+Rama chore/template-update-*
+          ↓
+Pull Request + QA + revisión humana
+```
+
+Para registrar proyectos, configurar el token y ejecutar la primera
+actualización, consulta [`docs/template-updates.md`](docs/template-updates.md).
+
 Sitio personal con tienda: storefront Next.js y backend Medusa, ambos locales. Fase actual: **F0 + F1**, catálogo local sin pagos y sin despliegue.
 
 - **Visibilidad**: privada. No hacerla pública sin autorización explícita de Fabián.
@@ -110,6 +137,20 @@ data/approved/catalog.json → npm run catalog:import → producto en DRAFT
 
 El importador es idempotente (busca por `handle`) y **nunca publica**: un borrador solo se publica
 desde el admin, por decisión humana. No hay integración con Odelza ni sincronización automática.
+
+## Template y proyectos derivados
+
+Este repositorio es la fuente de la template. La configuración propia de cada
+proyecto vive en `apps/storefront/data/project-config.mjs`; el código común y
+las reglas de actualización están descritos en `template-manifest.json`.
+
+Las actualizaciones se publican como releases y llegan a los proyectos
+derivados mediante ramas y Pull Requests automáticos. No se hace push directo a
+`main`. El procedimiento completo, el registro de consumidores y los secretos
+necesarios están documentados en [`docs/template-updates.md`](docs/template-updates.md).
+
+El checkout usa el contrato `PaymentProvider` y conserva `demo` como proveedor
+por defecto. No hay todavía una pasarela real ni credenciales financieras.
 
 Validar sin arrancar Medusa:
 

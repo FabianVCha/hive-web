@@ -1,0 +1,59 @@
+name: Propose template update
+
+on:
+  repository_dispatch:
+    types: [template-release]
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Template repository in owner/name format
+        required: true
+        default: FabianVCha/hive-web
+        type: string
+      ref:
+        description: Template branch or tag to merge
+        required: true
+        default: main
+        type: string
+      version:
+        description: Version label for the update branch
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare template update
+        env:
+          TEMPLATE_REPOSITORY: ${{ github.event.client_payload.repository || inputs.repository }}
+          TEMPLATE_REF: ${{ github.event.client_payload.ref || inputs.ref || 'main' }}
+          TEMPLATE_VERSION: ${{ github.event.client_payload.version || inputs.version }}
+          UPDATE_BRANCH: chore/template-update-${{ github.event.client_payload.version || inputs.version }}
+          TEMPLATE_UPDATE_TOKEN: ${{ secrets.TEMPLATE_UPDATE_TOKEN }}
+        run: |
+          test -n "$TEMPLATE_REPOSITORY"
+          test -n "$TEMPLATE_VERSION"
+          git config --global url."https://x-access-token:${TEMPLATE_UPDATE_TOKEN}@github.com/".insteadOf https://github.com/
+          export TEMPLATE_REMOTE="https://github.com/${TEMPLATE_REPOSITORY}.git"
+          node scripts/prepare-template-update.mjs
+      - name: Open update pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.TEMPLATE_UPDATE_TOKEN || github.token }}
+          branch: chore/template-update-${{ github.event.client_payload.version || inputs.version }}
+          title: chore(template): update to ${{ github.event.client_payload.version || inputs.version }}
+          commit-message: chore(template): update template
+          body: |
+            Automated template update proposal.
+
+            The update preserves paths declared as project-owned in `template-manifest.json`.
+            Review conflicts, project configuration, migrations, and the complete QA suite before merging.
+          labels: template-update

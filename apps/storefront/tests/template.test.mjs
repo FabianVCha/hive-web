@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { storefront } from '../data/storefront.mjs';
+import { projectConfig } from '../data/project-config.mjs';
 import { campaign, productStory, kitPackingState } from '../lib/campaign.mjs';
 import { objectiveItems, selectionResult } from '../lib/objectives.mjs';
 import { restoreCart, cartTotal } from '../lib/prototype.mjs';
 import { createSnapshot, emptyDelivery, receiptLines, simulatePayment } from '../lib/guest-checkout.ts';
+import { createPaymentProvider } from '../lib/payment-provider.ts';
 
 test('template configuration has neutral public identity, images and consistent routes', () => {
   assert.doesNotMatch(JSON.stringify(storefront), /ferready|bauker|taladro|herramienta|homecenter|bosch|ferreter/i);
@@ -44,4 +46,20 @@ test('template paid receipt uses configured name and preserves demo safety', () 
   assert(text.includes(storefront.products[0].name));
   assert.match(text, /SIN COBRO REAL/);
   assert.doesNotMatch(text, /ferready|taladro|bauker/i);
+});
+
+test('project configuration owns project identity and provider selection', () => {
+  assert.equal(projectConfig.projectId, 'template');
+  assert.equal(projectConfig.paymentProvider, 'demo');
+  assert.equal(projectConfig.storefront, storefront);
+});
+
+test('demo payment provider preserves the existing simulated payment contract', async () => {
+  const delivery = { ...emptyDelivery, fullName: 'Cliente de prueba', email: 'test@example.com', phone: '3000000000', address: 'Dirección de ejemplo' };
+  const order = createSnapshot([{ slug: storefront.products[0].slug, quantity: 1 }], storefront.products, delivery, 'DEMO-provider', '2026-11-17T12:00:00Z');
+  const result = await createPaymentProvider('demo').createPayment(order);
+  assert.equal(result.provider, 'demo');
+  assert.equal(result.status, 'paid');
+  assert.equal(result.reference, order.reference);
+  assert.equal(result.order.paymentStatus, 'simulated-paid');
 });
