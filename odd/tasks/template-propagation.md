@@ -21,3 +21,4 @@ L5. GREEN observed: template manifest validation passes; storefront tests pass 3
 L6. Pipeline probe passed in an isolated temporary Git fixture: template-owned files and version updated, derived `project.id` and project configuration preserved, and a branch commit was created.
 L7. `actionlint` is unavailable in the environment, so GitHub workflow syntax has not received that tool's proof. The workflows are static and use standard GitHub Actions syntax; CI remains the authoritative remote check.
 L8. README now has a dedicated, prominent section explaining the release-to-Pull-Request update flow and the prohibition on direct pushes to `main`.
+L9. Independent recheck cleared the notifier-permission blocker. Its conflict-cleanup probe could not run because the approved scratch area was full (`ENOSPC`); the parent regression test and positive isolated sync probe passed. User explicitly authorized publishing this correction despite the unavailable independent proof.

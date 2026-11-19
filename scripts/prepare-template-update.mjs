@@ -8,11 +8,22 @@ const remoteUrl = process.env.TEMPLATE_REMOTE;
 const templateRef = process.env.TEMPLATE_REF || manifest.sync.templateRef;
 const updateBranch = process.env.UPDATE_BRANCH;
 const projectId = manifest.project?.id;
+const git = (...args) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 
 if (!remoteUrl) throw new Error("TEMPLATE_REMOTE is required");
 if (!updateBranch) throw new Error("UPDATE_BRANCH is required");
 
-const git = (...args) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+const initialBranch = (() => {
+  try {
+    return git("branch", "--show-current");
+  } catch {
+    return "";
+  }
+})();
+const initialHead = git("rev-parse", "HEAD");
+let remoteAdded = false;
+let branchCreated = false;
+
 const trackedFiles = git("ls-files", "-z").split("\0").filter(Boolean);
 
 function globToRegExp(glob) {
@@ -48,11 +59,13 @@ try {
     git("remote", "get-url", "template");
   } catch {
     git("remote", "add", "template", remoteUrl);
+    remoteAdded = true;
   }
 
   git("fetch", "template", `${templateRef}:refs/remotes/template/${templateRef}`);
   const sourceManifest = JSON.parse(git("show", `refs/remotes/template/${templateRef}:template-manifest.json`));
   git("switch", "-c", updateBranch);
+  branchCreated = true;
   try {
     // Prefer the derived project's side for conflicts. Project-owned files and
     // metadata are restored explicitly below, while template-owned changes
@@ -97,6 +110,27 @@ try {
     changed,
   }));
 } catch (error) {
+  try {
+    git("merge", "--abort");
+  } catch {
+    // No merge is in progress, or it was already aborted.
+  }
+  try {
+    if (branchCreated) {
+      if (initialBranch) git("switch", initialBranch);
+      else git("switch", "--detach", initialHead);
+      git("branch", "-D", updateBranch);
+    }
+  } catch {
+    // Preserve the original error; the workflow must stop for manual recovery.
+  }
+  if (remoteAdded) {
+    try {
+      git("remote", "remove", "template");
+    } catch {
+      // Preserve the original error; the workflow must stop for manual recovery.
+    }
+  }
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 }

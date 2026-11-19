@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { readTemplateManifest, validateTemplateManifest } from './template-manifest.mjs';
 
 test('template manifest describes a pull-request update boundary', async () => {
@@ -9,4 +10,9 @@ test('template manifest describes a pull-request update boundary', async () => {
   assert.equal(manifest.sync.baseBranch, 'main');
   assert(manifest.sync.projectOwnedPaths.includes('apps/storefront/data/project-config.mjs'));
   assert(manifest.sync.templateOwnedPaths.includes('apps/'));
+});
+
+test('release notifier can dispatch with its declared token permissions', async () => {
+  const workflow = await readFile('.github/workflows/template-release.yml', 'utf8');
+  assert.match(workflow, /permissions:\s*\n\s+contents:\s+write/);
 });
